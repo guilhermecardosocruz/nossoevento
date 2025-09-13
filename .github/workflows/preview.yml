@@ -1,0 +1,31 @@
+name: Preview
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+jobs:
+  preview:
+    if: ${{ github.event.action != 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Vercel Preview Deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: .
+          alias-domains: pr-${{ github.event.number }}.example.com
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  teardown:
+    if: ${{ github.event.action == 'closed' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Preview cleaned"

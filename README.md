@@ -26,8 +26,8 @@ pnpm dev:mobile
 
 ### Rotas
 - `/auth/register`
-- `/auth/login` → redireciona para `/ingressos` após login
-- `/ingressos` (protegida) → "Você conseguiu, {nome} 🎉"
+- `/auth/login` → redireciona para `/logado` após login
+- `/logado` (protegida) → "Você conseguiu, {nome} 🎉"
 - `/eventos` → "Ainda não há eventos cadastrados"
 
 ### Dicas

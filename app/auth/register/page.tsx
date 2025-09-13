@@ -1,4 +1,5 @@
 "use client";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/lib/validators";
@@ -11,48 +12,139 @@ import { Field } from "@/components/form/field";
 import { toast } from "sonner";
 import ky from "ky";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 type FormData = z.infer<typeof registerSchema>;
 
+/** ---- helpers de máscara ---- */
+const maskDateBR = (value: string) => {
+  const v = value.replace(/\D/g, "").slice(0, 8); // só números, até 8 dígitos
+  const p1 = v.slice(0, 2);
+  const p2 = v.slice(2, 4);
+  const p3 = v.slice(4, 8);
+  if (v.length <= 2) return p1;
+  if (v.length <= 4) return `${p1}/${p2}`;
+  return `${p1}/${p2}/${p3}`;
+};
+
+const maskPhoneBR = (value: string) => {
+  const v = value.replace(/\D/g, "").slice(0, 11);
+  if (v.length <= 2) return `(${v}`;
+  if (v.length <= 7) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
+  return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+};
+
+const brDateToISO = (ddmmyyyy: string) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(ddmmyyyy);
+  if (!m) return ddmmyyyy; // deixa como está; validação cuidará
+  const [, dd, mm, yyyy] = m;
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function RegisterPage() {
   const router = useRouter();
-  const { register, handleSubmit, setValue, formState: { errors } } =
-    useForm<FormData>({ resolver: zodResolver(registerSchema) });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    setValue,
+  } = useForm<FormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      cpf: "",
+      birthDate: "",
+      phone: "",
+      email: "",
+      password: "",
+    },
+  });
+
+  // Máscara de data: dd/mm/aaaa
+  const onBirthChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const masked = maskDateBR(e.target.value);
+      setValue("birthDate", masked, { shouldValidate: true });
+    },
+    [setValue]
+  );
+
+  // Máscara de telefone: (11) 99999-9999
+  const onPhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const masked = maskPhoneBR(e.target.value);
+      setValue("phone", masked, { shouldValidate: true });
+    },
+    [setValue]
+  );
 
   const onSubmit = async (data: FormData) => {
     try {
-      await ky.post("/api/register", { json: data });
+      // Converte a data BR para ISO antes de enviar
+      const payload = {
+        ...data,
+        birthDate: brDateToISO(data.birthDate),
+      };
+
+      // ajuste a rota para a sua API
+      await ky.post("/api/register", { json: payload });
+
       toast.success("Conta criada! Faça login.");
+      reset();
       router.push("/auth/login");
-    } catch (e:any) {
-      toast.error(e?.response ? "CPF/e-mail já cadastrado ou dados inválidos" : "Erro de rede");
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (status === 409) {
+        toast.error("CPF/E-mail já cadastrado");
+      } else if (status === 400) {
+        toast.error("Dados inválidos");
+      } else {
+        toast.error("Erro de rede");
+      }
     }
   };
 
   return (
-    <AuthShell title="Nosso Evento" subtitle="Cadastro">
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4" noValidate>
-        <Field label="Nome" error={errors.name?.message}>
-          <Input aria-label="Nome" placeholder="Nome" {...register("name")} />
+    <AuthShell title="Criar conta" subtitle="Preencha seus dados para continuar">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Field label="Nome completo" error={errors.name?.message}>
+          <Input placeholder="Nome Completo" {...register("name")} />
         </Field>
+
         <Field label="CPF" error={errors.cpf?.message}>
-          <CPFInput aria-label="CPF" {...register("cpf")}
-            onChange={(e:any)=> setValue("cpf", e.target.value, { shouldValidate: true })} />
+          <CPFInput
+            placeholder="000.000.000-00"
+            inputMode="numeric"
+            {...register("cpf")}
+          />
         </Field>
-        <Field label="Data de nascimento" error={errors.birthDate?.message}>
-          <Input aria-label="Data de nascimento" type="date" {...register("birthDate")} />
+
+
+
+        <Field label="Telefone" hint="Com DDD" error={errors.phone?.message}>
+          <Input
+            placeholder="(11) 99999-9999"
+            inputMode="numeric"
+            {...register("phone")}
+            onChange={onPhoneChange}
+          />
         </Field>
-        <Field label="Telefone" error={errors.phone?.message}>
-          <Input aria-label="Telefone" inputMode="tel" placeholder="(00) 00000-0000" {...register("phone")} />
-        </Field>
+
         <Field label="E-mail" error={errors.email?.message}>
-          <Input aria-label="E-mail" type="email" placeholder="email@exemplo.com" {...register("email")} />
+          <Input type="email" placeholder="(E-Mail) voce@exemplo.com" {...register("email")} />
         </Field>
-        <Field label="Senha" error={errors.password?.message}>
-          <Input aria-label="Senha" type="password" placeholder="Crie uma senha" {...register("password")} />
+
+        <Field label="Senha" hint="Mínimo 6 caracteres" error={errors.password?.message}>
+          <Input type="password" placeholder="Senha" {...register("password")} />
         </Field>
-        <Button type="submit" className="w-full">Próximo</Button>
+
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? "Enviando..." : "Cadastrar"}
+        </Button>
       </form>
     </AuthShell>
   );
 }
+

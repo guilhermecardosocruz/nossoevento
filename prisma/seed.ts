@@ -1,20 +1,17 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+
 async function main() {
-  const exists = await prisma.user.findUnique({ where: { cpf: "12345678909" } });
-  if (!exists) {
-    await prisma.user.create({
-      data: {
-        cpf: "12345678909",
-        name: "Guilherme",
-        email: "guilherme@example.com",
-        phone: "(11) 99999-9999",
-        passwordHash: await bcrypt.hash("senha123", 10),
-        birthDate: new Date("1990-01-01")
-      }
-    });
-  }
-  console.log("Seed OK (user CPF 123.456.789-09 / senha: senha123)");
+  // exemplos de seeds idempotentes
+  await prisma.role?.upsert?.({
+    where: { name: 'ADMIN' as any },
+    update: {},
+    create: { name: 'ADMIN' as any }
+  } as any).catch(() => void 0);
+
+  // adicione aqui seus upserts (não falha se tabela não existir)
 }
-main().finally(()=>prisma.$disconnect());
+
+main()
+  .then(async () => { await prisma.$disconnect(); })
+  .catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1); });

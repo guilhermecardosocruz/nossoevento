@@ -1,18 +1,55 @@
 "use client";
 import * as React from "react";
 import { Input } from "@/components/ui/input";
+
 function maskCPF(v: string) {
-  return v.replace(/\D/g, "").slice(0, 11).replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  return v
+    .replace(/\D/g, "")
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
-export const CPFInput = React.forwardRef<HTMLInputElement, React.ComponentProps<typeof Input>>(
+
+type Props = React.ComponentProps<typeof Input>;
+
+export const CPFInput = React.forwardRef<HTMLInputElement, Props>(
   ({ onChange, value, ...props }, ref) => {
-    const [val, setVal] = React.useState(String(value ?? ""));
+    const [val, setVal] = React.useState<string>(String(value ?? ""));
+
+    // 🔄 sincroniza quando o valor vem de fora (ex.: RHF reset)
+    React.useEffect(() => {
+      setVal(String(value ?? ""));
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const masked = maskCPF(e.target.value);
+      setVal(masked);
+
+      // Propaga para o consumidor mantendo o mesmo evento,
+      // mas com o value já mascarado
+      if (onChange) {
+        // cria um clone raso e ajusta apenas o target.value
+        const cloned = { ...e, target: { ...e.target, value: masked } } as React.ChangeEvent<HTMLInputElement>;
+        onChange(cloned);
+      }
+    };
+
     return (
-      <Input ref={ref} inputMode="numeric" autoComplete="on" aria-label="CPF" placeholder="000.000.000-00"
+      <Input
+        ref={ref}
+        inputMode="numeric"
+        autoComplete="off"
+        aria-label="CPF"
+        placeholder="000.000.000-00"
+        maxLength={14}
         value={val}
-        onChange={(e) => { const v = maskCPF(e.target.value); setVal(v); onChange?.({ ...e, target: { ...e.target, value: v } } as any); }}
-        {...props} />
+        onChange={handleChange}
+        {...props}
+      />
     );
   }
 );
+
 CPFInput.displayName = "CPFInput";
+

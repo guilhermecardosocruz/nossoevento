@@ -16,6 +16,8 @@ model User {
   birthDate    DateTime?
   passwordHash String
   createdAt    DateTime @default(now())
+
+  @@map("User")
 }
 
 model Event {
@@ -23,8 +25,11 @@ model Event {
   title       String
   description String?
   location    String?
-  startsAt    DateTime
+  startAt     DateTime
   endsAt      DateTime?
   createdAt   DateTime @default(now())
   isPublished Boolean  @default(false)
+
+  @@map("Event")
 }
+

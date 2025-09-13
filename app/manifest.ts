@@ -1,10 +1,13 @@
 import { MetadataRoute } from "next";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Nosso Evento",
     short_name: "NossoEvento",
+    description: "Aplicativo de eventos com login por CPF.",
     start_url: "/",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#ffffff",
     theme_color: "#0ea5e9",
     icons: [
@@ -13,3 +16,4 @@ export default function manifest(): MetadataRoute.Manifest {
     ]
   };
 }
+

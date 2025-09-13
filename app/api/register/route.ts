@@ -1,3 +1,6 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { NextRequest, NextResponse } from "next/server";
 import { registerSchema } from "@/lib/validators";
 import { prisma } from "@/lib/prisma";
@@ -23,7 +26,7 @@ export async function POST(req: NextRequest) {
       passwordHash,
       email,
       phone,
-      birthDate: new Date(birthDate)
+     
     }
   });
 
