@@ -1,34 +1,62 @@
+// app/api/register/route.ts
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-import { NextRequest, NextResponse } from "next/server";
+
+import { NextResponse, type NextRequest } from "next/server";
 import { registerSchema } from "@/lib/validators";
 import { prisma } from "@/lib/prisma";
 import { onlyDigits } from "@/lib/cpf";
 import bcrypt from "bcrypt";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = registerSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
-
-  const { name, cpf, phone, email, password } = parsed.data; = parsed.data;
-  const cpfClean = onlyDigits(cpf);
-
-  const exists = await prisma.user.findFirst({ where: { OR: [{ cpf: cpfClean }, { email }] } } );
-  if (exists) return NextResponse.json({ error: "CPF ou e-mail já cadastrado" }, { status: 409 });
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
-    data: {
-      cpf: cpfClean,
-      name,
-      passwordHash,
-      email,
-      phone,
-     
+  try {
+    // 1) Parse + validação com Zod
+    const body = await req.json();
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
-  });
 
-  return NextResponse.json({ ok: true });
+    // 2) Dados limpos
+    const { name, cpf, phone, email, password } = parsed.data;
+    const cpfClean = onlyDigits(cpf);
+    const phoneClean = onlyDigits(phone);
+    const emailClean = email.trim().toLowerCase();
+    const nameClean = name.trim();
+
+    // 3) Verifica duplicidade (CPF ou e-mail)
+    const exists = await prisma.user.findFirst({
+      where: { OR: [{ cpf: cpfClean }, { email: emailClean }] },
+      select: { id: true },
+    });
+    if (exists) {
+      return NextResponse.json(
+        { error: "CPF ou e-mail já cadastrado" },
+        { status: 409 }
+      );
+    }
+
+    // 4) Hash de senha e criação
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await prisma.user.create({
+      data: {
+        cpf: cpfClean,
+        name: nameClean,
+        email: emailClean,
+        phone: phoneClean,
+        passwordHash,
+      },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    // Log opcional: console.error(err)
+    return NextResponse.json(
+      { error: "Falha no servidor" },
+      { status: 500 }
+    );
+  }
 }
+
