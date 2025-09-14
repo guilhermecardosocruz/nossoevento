@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
-  const { cpf, name, password, email, phone, birthDate } = parsed.data;
+  const { name, cpf, phone, email, password } = parsed.data; = parsed.data;
   const cpfClean = onlyDigits(cpf);
 
   const exists = await prisma.user.findFirst({ where: { OR: [{ cpf: cpfClean }, { email }] } } );

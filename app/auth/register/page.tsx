@@ -34,12 +34,7 @@ const maskPhoneBR = (value: string) => {
   return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
 };
 
-const brDateToISO = (ddmmyyyy: string) => {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(ddmmyyyy);
-  if (!m) return ddmmyyyy; // deixa como está; validação cuidará
-  const [, dd, mm, yyyy] = m;
-  return `${yyyy}-${mm}-${dd}`;
-};
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -55,22 +50,13 @@ export default function RegisterPage() {
     defaultValues: {
       name: "",
       cpf: "",
-      birthDate: "",
       phone: "",
       email: "",
       password: "",
     },
   });
 
-  // Máscara de data: dd/mm/aaaa
-  const onBirthChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const masked = maskDateBR(e.target.value);
-      setValue("birthDate", masked, { shouldValidate: true });
-    },
-    [setValue]
-  );
-
+  
   // Máscara de telefone: (11) 99999-9999
   const onPhoneChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
