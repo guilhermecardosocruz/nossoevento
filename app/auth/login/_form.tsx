@@ -50,15 +50,23 @@ export default function LoginForm() {
       title="Entrar"
       subtitle="Use seu CPF e senha para acessar"
       footer={
-        <p className="text-center text-sm text-muted-foreground">
-          Não tem conta?{" "}
+        <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+          <p>
+            Não tem conta?{" "}
+            <Link
+              href="/auth/register"
+              className="font-medium underline underline-offset-4"
+            >
+              Cadastrar
+            </Link>
+          </p>
           <Link
-            href="/auth/register"
-            className="font-medium underline underline-offset-4"
+            href="/auth/forgot"
+            className="underline underline-offset-4"
           >
-            Cadastrar
+            Esqueci minha senha
           </Link>
-        </p>
+        </div>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -83,27 +91,6 @@ export default function LoginForm() {
         <Button className="w-full" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
-
-        <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-          <p>
-            Não tem conta?{" "}
-            <Link
-              href="/auth/register"
-              className="font-medium underline underline-offset-4"
-            >
-              Cadastrar
-            </Link>
-          </p>
-        </div>
-
-        <div className="text-center">
-          <Link
-            href="/auth/forgot"
-            className="text-sm text-muted-foreground underline underline-offset-4"
-          >
-            Esqueci minha senha
-          </Link>
-        </div>
       </form>
     </AuthShell>
   );
