@@ -1,10 +1,12 @@
-generator client {
-  provider = "prisma-client-js"
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+generator client {
+  provider = "prisma-client-js"
 }
 
 model User {
@@ -12,12 +14,10 @@ model User {
   cpf          String   @unique
   name         String
   email        String?  @unique
-  phone        String?  @db.VarChar(20)
+  phone        String?
   birthDate    DateTime?
   passwordHash String
   createdAt    DateTime @default(now())
-
-  @@map("User")
 }
 
 model Event {
@@ -25,11 +25,12 @@ model Event {
   title       String
   description String?
   location    String?
-  startAt     DateTime
+  startsAt    DateTime
   endsAt      DateTime?
   createdAt   DateTime @default(now())
   isPublished Boolean  @default(false)
 
-  @@map("Event")
+  // 🔹 Index para listar “próximos eventos publicados”
+  @@index([isPublished, startsAt], map: "event_published_starts_idx")
 }
 

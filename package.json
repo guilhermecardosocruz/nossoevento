@@ -9,10 +9,7 @@
     "start": "next start",
     "lint": "eslint . --ext ts,tsx --max-warnings=0",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev -n init",
     "prisma:deploy": "prisma migrate deploy",
-    "db:up": "docker compose up -d || docker-compose up -d",
-    "db:down": "docker compose down --volumes --remove-orphans || docker-compose down --volumes --remove-orphans",
     "seed": "tsx -r dotenv/config prisma/seed.ts",
     "postinstall": "prisma generate"
   },
@@ -56,3 +53,4 @@
     "typescript": "5.9.2"
   }
 }
+

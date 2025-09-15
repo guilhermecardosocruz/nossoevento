@@ -1,3 +1,12 @@
+# Bloqueia áreas privadas e APIs
 User-agent: *
+Disallow: /auth/
+Disallow: /logado
+Disallow: /api/
+
+# Demais páginas podem ser indexadas
 Allow: /
-Sitemap: /sitemap.xml
+
+# Sitemap (produção)
+Sitemap: https://nossoevento-git-main-guilhermes-projects-b92ea6f9.vercel.app/sitemap.xml
+

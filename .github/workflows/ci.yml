@@ -1,22 +1,58 @@
 name: CI
+
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run typecheck --if-present
-      - run: npm run lint --if-present
-      - run: npm test --if-present
-      - run: npm run build
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      - name: Typecheck
+        run: pnpm run typecheck --if-present
+
+      - name: Lint
+        run: pnpm run lint --if-present
+
+      # opcional: se tiver testes configurados
+      - name: Test
+        run: pnpm test --if-present
+
+      - name: Build
+        run: pnpm run build
+

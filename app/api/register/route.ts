@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
-    // 2) Dados limpos
+    // 2) Normalização / limpeza
     const { name, cpf, phone, email, password } = parsed.data;
     const cpfClean = onlyDigits(cpf);
     const phoneClean = onlyDigits(phone);
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       where: { OR: [{ cpf: cpfClean }, { email: emailClean }] },
       select: { id: true },
     });
+
     if (exists) {
       return NextResponse.json(
         { error: "CPF ou e-mail já cadastrado" },
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4) Hash de senha e criação
+    // 4) Hash da senha e criação do usuário
     const passwordHash = await bcrypt.hash(password, 10);
 
     await prisma.user.create({
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // Log opcional: console.error(err)
+    console.error("Erro no /api/register:", err);
     return NextResponse.json(
       { error: "Falha no servidor" },
       { status: 500 }

@@ -12,10 +12,20 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+
     "baseUrl": ".",
     "paths": { "@/*": ["./*"] },
+
     "incremental": true,
-    "plugins": [{ "name": "next" }]
+    "plugins": [{ "name": "next" }],
+
+
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true
+
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

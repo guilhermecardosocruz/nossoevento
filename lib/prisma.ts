@@ -1,15 +1,30 @@
+// lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+declare global {
+  // Evita recriar o client em hot-reload (dev) e em serverless
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
+}
 
-export const prisma =
-  globalForPrisma.prisma ??
+const makePrisma = () =>
   new PrismaClient({
     log:
       process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
+        ? ["query", "warn", "error"]
         : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = global.prisma ?? makePrisma();
+
+if (process.env.NODE_ENV !== "production") {
+  global.prisma = prisma;
+}
+
+// Aviso útil no Vercel/preview se esquecer de setar o DATABASE_URL
+if (!process.env.DATABASE_URL && process.env.NODE_ENV !== "test") {
+  console.warn(
+    "[prisma] DATABASE_URL não definida. Configure as variáveis no Vercel (Production/Preview)."
+  );
+}
 

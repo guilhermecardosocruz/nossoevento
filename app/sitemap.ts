@@ -1,18 +1,24 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const base = "https://nossoevento-git-main-guilhermes-projects-b92ea6f9.vercel.app";
+
+  const now = new Date();
 
   return [
     {
       url: `${base}/`,
-      lastModified: new Date(),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 1.0,
     },
     {
       url: `${base}/eventos`,
-      lastModified: new Date(),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
-    // Se quiser adicionar outras páginas públicas, basta incluir aqui
+    // Adicione outras páginas públicas aqui se necessário
   ];
 }
 

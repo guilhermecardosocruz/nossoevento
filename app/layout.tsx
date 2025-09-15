@@ -1,34 +1,78 @@
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
+import { Providers } from "@/components/providers";
+import { auth } from "@/lib/auth"; // <-- importa auth para verificar sessão
+
 const inter = Inter({ subsets: ["latin"] });
-export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  title: "Nosso Evento",
+
+const APP_URL = "https://nossoevento-git-main-guilhermes-projects-b92ea6f9.vercel.app";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(APP_URL),
+  title: { default: "Nosso Evento", template: "%s — Nosso Evento" },
   description: "Acesso por CPF — Nosso Evento",
-  openGraph: { title: "Nosso Evento", type: "website" }
+  openGraph: { type: "website", title: "Nosso Evento", url: APP_URL },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", type: "image/png" },
+      { url: "/icons/icon-512.png", type: "image/png" },
+    ],
+  },
 };
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#2563eb",
+};
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth(); // <-- checa se usuário está logado
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${inter.className} min-h-dvh bg-white text-zinc-900`}>
         <Providers>
           <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
             <div className="mx-auto max-w-md px-4 h-14 flex items-center justify-center">
-              <Link href="/auth/login" className="font-semibold text-lg tracking-tight">Nosso Evento</Link>
+              <Link href="/" className="font-semibold text-lg tracking-tight">
+                Nosso Evento
+              </Link>
             </div>
           </header>
-          <div className="mx-auto max-w-md min-h-[calc(100dvh-56px)]">{children}</div>
+
+          <main className="mx-auto max-w-md min-h-[calc(100dvh-56px)]">
+            {children}
+          </main>
+
+          {/* 🔥 Footer dinâmico */}
           <nav className="mx-auto max-w-md sticky bottom-0 bg-white border-t">
             <div className="grid grid-cols-2 text-center">
-              <Link href="/auth/login" className="py-3 text-zinc-700">Login</Link>
-              <Link href="/eventos" className="py-3 text-zinc-700">Eventos</Link>
+              {!session && (
+                <Link href="/auth/login" className="py-3 text-zinc-700">
+                  Login
+                </Link>
+              )}
+              <Link href="/eventos" className="py-3 text-zinc-700">
+                Eventos
+              </Link>
             </div>
           </nav>
         </Providers>
-        <script dangerouslySetInnerHTML={{__html:`if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error))}`}} />
+
+        <Script id="sw-register" strategy="afterInteractive">
+          {`if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(console.error);
+              });
+            }`}
+        </Script>
       </body>
     </html>
   );
 }
+

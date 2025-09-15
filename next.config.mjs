@@ -7,9 +7,9 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: [
         'http://localhost:3000', // Dev local
-        'https://meuevento.com.br' // Produção
-      ]
-    }
+        'https://nossoevento-git-main-guilhermes-projects-b92ea6f9.vercel.app', // Produção (Vercel)
+      ],
+    },
   },
   images: {
     remotePatterns: [

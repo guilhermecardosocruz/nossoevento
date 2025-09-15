@@ -1,53 +1,72 @@
-// ---- PWA Service Worker (Next.js) -----------------------------------------
+// ---- PWA Service Worker (Next.js + Vercel) --------------------------------
 // Estratégias:
-// - HTML: network-first (offline fallback do cache)
+// - HTML (navegação): network-first com Navigation Preload + cache de fallback
 // - _next/static, fontes, imagens, css/js: cache-first
-// - (Opcional) APIs/JSON: stale-while-revalidate (ver bloco comentado)
+// - (Opcional) APIs/JSON: stale-while-revalidate (bloco comentado)
 // ---------------------------------------------------------------------------
 
-const CACHE_VERSION = "v1.0.0"; // ↑ aumente isto quando mudar a política de cache
+const CACHE_VERSION = "v1.0.1";
 const RUNTIME_HTML = `html-${CACHE_VERSION}`;
 const RUNTIME_ASSETS = `assets-${CACHE_VERSION}`;
 // Opcional: const RUNTIME_API = `api-${CACHE_VERSION}`;
 
 const CORE_PRECACHE = [
-  "/",               // home
+  "/",                   // home
   "/robots.txt",
-  "/manifest.webmanifest", // caso use .webmanifest
-  "/manifest.json",        // ou caso use .json
+  "/manifest.webmanifest",
   "/favicon.ico",
 ];
 
-// Instalação: pré-cache do essencial e ativa imediatamente
+// Util: adiciona ao cache ignorando falhas individuais
+async function precacheSafe(cache, urls) {
+  await Promise.all(
+    urls.map((u) =>
+      cache.add(u).catch(() => {
+        // Arquivo opcional ausente? Ignora.
+      })
+    )
+  );
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(RUNTIME_HTML).then((cache) => cache.addAll(CORE_PRECACHE))
+    (async () => {
+      const cache = await caches.open(RUNTIME_HTML);
+      await precacheSafe(cache, CORE_PRECACHE);
+      self.skipWaiting();
+    })()
   );
-  self.skipWaiting();
 });
 
-// Ativação: limpeza de versões antigas e tomada de controle
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
+      // Habilita Navigation Preload (acelera primeiras respostas)
+      if ("navigationPreload" in self.registration) {
+        try {
+          await self.registration.navigationPreload.enable();
+        } catch {}
+      }
+
+      // Limpa versões antigas
       const keys = await caches.keys();
       await Promise.all(
         keys
           .filter((k) => ![RUNTIME_HTML, RUNTIME_ASSETS /*, RUNTIME_API*/].includes(k))
           .map((k) => caches.delete(k))
       );
+
       await self.clients.claim();
     })()
   );
 });
 
-// Utilitários de match
+// --------- Helpers de identificação ----------
 const isHTML = (req) =>
   req.mode === "navigate" ||
   (req.headers.get("accept") || "").includes("text/html");
 
-const isNextStatic = (url) =>
-  url.pathname.startsWith("/_next/static/");
+const isNextStatic = (url) => url.pathname.startsWith("/_next/static/");
 
 const isAssetLike = (req, url) => {
   if (isNextStatic(url)) return true;
@@ -55,26 +74,39 @@ const isAssetLike = (req, url) => {
   return ["style", "script", "image", "font"].includes(dest);
 };
 
-// Opcional: trate APIs/JSON específicas do seu domínio
 // const isApi = (url) =>
 //   url.origin === self.location.origin && url.pathname.startsWith("/api/");
 
-// Network-first para páginas HTML
+// --------- Estratégias ----------
 async function handleHTML(event) {
+  const cache = await caches.open(RUNTIME_HTML);
+
+  // Tenta usar Navigation Preload se disponível
   try {
-    const fresh = await fetch(event.request);
-    const cache = await caches.open(RUNTIME_HTML);
-    cache.put(event.request, fresh.clone());
+    const preload = await event.preloadResponse;
+    if (preload) {
+      cache.put(event.request, preload.clone());
+      return preload;
+    }
+  } catch {}
+
+  try {
+    const fresh = await fetch(event.request, { credentials: "same-origin" });
+    if (fresh && fresh.ok) {
+      cache.put(event.request, fresh.clone());
+    }
     return fresh;
   } catch {
-    const cached = await caches.match(event.request);
+    // offline: tenta cache desta rota
+    const cached = await cache.match(event.request);
     if (cached) return cached;
-    // fallback mínimo: tenta devolver a home precacheada
-    return caches.match("/");
+    // fallback mínimo para home (precache)
+    const home = await cache.match("/");
+    if (home) return home;
+    return Response.error();
   }
 }
 
-// Cache-first para assets estáticos (_next/static, css/js/imagens/fontes)
 async function handleAsset(event, url) {
   const cached = await caches.match(event.request);
   if (cached) return cached;
@@ -88,7 +120,6 @@ async function handleAsset(event, url) {
   return resp;
 }
 
-// Stale-While-Revalidate para APIs (descomente caso queira usar)
 // async function handleApi(event) {
 //   const cache = await caches.open(RUNTIME_API);
 //   const cached = await cache.match(event.request);
@@ -97,16 +128,15 @@ async function handleAsset(event, url) {
 //       if (resp && resp.ok) cache.put(event.request, resp.clone());
 //       return resp;
 //     })
-//     .catch(() => cached); // se offline, cai no cache
-//   return cached ? Promise.resolve(cached).then(() => networkPromise) : networkPromise;
+//     .catch(() => cached || Response.error());
+//   return cached ? cached : networkPromise;
 // }
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
-
-  // Apenas GET é seguro para cache
   if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
 
   if (isHTML(request)) {
     event.respondWith(handleHTML(event));
@@ -123,7 +153,6 @@ self.addEventListener("fetch", (event) => {
   //   return;
   // }
 
-  // Demais requisições → cai no fetch normal
-  // (ou adapte conforme necessário)
+  // demais reqs: segue fluxo normal
 });
 
