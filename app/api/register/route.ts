@@ -1,36 +1,32 @@
 // app/api/register/route.ts
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { NextResponse, type NextRequest } from "next/server";
 import { registerSchema } from "@/lib/validators";
 import { prisma } from "@/lib/prisma";
 import { onlyDigits } from "@/lib/cpf";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs"; // ⬅️ bcryptjs
 
 export async function POST(req: NextRequest) {
   try {
-    // 1) Parse + validação com Zod
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
     }
 
-    // 2) Normalização / limpeza
     const { name, cpf, phone, email, password } = parsed.data;
     const cpfClean = onlyDigits(cpf);
     const phoneClean = onlyDigits(phone);
     const emailClean = email.trim().toLowerCase();
     const nameClean = name.trim();
 
-    // 3) Verifica duplicidade (CPF ou e-mail)
     const exists = await prisma.user.findFirst({
       where: { OR: [{ cpf: cpfClean }, { email: emailClean }] },
       select: { id: true },
     });
-
     if (exists) {
       return NextResponse.json(
         { error: "CPF ou e-mail já cadastrado" },
@@ -38,8 +34,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4) Hash da senha e criação do usuário
-    const passwordHash = await bcrypt.hash(password, 10);
+    // ⬇️ hash com bcryptjs
+    const passwordHash = bcrypt.hashSync(password, 10);
 
     await prisma.user.create({
       data: {
@@ -52,12 +48,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Erro no /api/register:", err);
-    return NextResponse.json(
-      { error: "Falha no servidor" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Falha no servidor" }, { status: 500 });
   }
 }
 

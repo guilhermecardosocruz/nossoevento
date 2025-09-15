@@ -1,30 +1,22 @@
 // prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
-/** Helpers */
-const onlyDigits = (s: string) => String(s ?? "").replace(/\D/g, "");
-
-/** Seeds */
 async function seedUserDemo() {
   const cpf = onlyDigits("123.456.789-09"); // CPF de exemplo (válido)
-  const passwordHash = await bcrypt.hash("senha123", 10);
+  const passwordHash = bcrypt.hashSync("senha123", 10);
 
   await prisma.user.upsert({
-    where: { cpf }, // UNIQUE por cpf
-    update: {
-      name: "Usuário Demo",
-      email: "demo@nossoevento.test",
-      phone: onlyDigits("(11) 99999-0000"),
-      passwordHash,
-    },
+    where: { cpf }, // cpf é único
+    update: { passwordHash }, // garante senha conhecida no re-run
     create: {
       cpf,
       name: "Usuário Demo",
-      email: "demo@nossoevento.test",
-      phone: onlyDigits("(11) 99999-0000"),
+      email: "demo@nossoevento.dev",
+      phone: "11999999999",
       passwordHash,
     },
   });
@@ -33,58 +25,70 @@ async function seedUserDemo() {
 }
 
 async function seedEvents() {
-  const now = new Date();
+  const now = Date.now();
+  const in7d = new Date(now + 7 * 24 * 60 * 60 * 1000);
+  const in30d = new Date(now + 30 * 24 * 60 * 60 * 1000);
 
-  // IDs fixos para upsert idempotente
-  const WELCOME_ID = "evt_welcome_seed";
-  const DRAFT_ID = "evt_draft_seed";
-
+  // Evento publicado (exemplo)
   await prisma.event.upsert({
-    where: { id: WELCOME_ID },
+    where: { id: "evt_welcome_seed" },
     update: {
-      title: "Evento de Boas-Vindas",
-      description: "Primeiro evento público da plataforma.",
+      title: "Bem-vindo ao Nosso Evento",
+      description: "Primeiro evento de demonstração.",
       location: "Online",
-      startsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 dias
-      endsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // +2h
+      startsAt: in7d,
+      endsAt: new Date(in7d.getTime() + 2 * 60 * 60 * 1000),
       isPublished: true,
     },
     create: {
-      id: WELCOME_ID,
-      title: "Evento de Boas-Vindas",
-      description: "Primeiro evento público da plataforma.",
+      id: "evt_welcome_seed",
+      title: "Bem-vindo ao Nosso Evento",
+      description: "Primeiro evento de demonstração.",
       location: "Online",
-      startsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-      endsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000),
+      startsAt: in7d,
+      endsAt: new Date(in7d.getTime() + 2 * 60 * 60 * 1000),
       isPublished: true,
     },
   });
 
+  // Evento rascunho (exemplo)
   await prisma.event.upsert({
-    where: { id: DRAFT_ID },
+    where: { id: "evt_draft_seed" },
     update: {
-      title: "Evento em Rascunho",
-      description: "Ainda não publicado.",
+      title: "Rascunho de Evento",
+      description: "Este evento está como rascunho.",
       location: "A definir",
-      startsAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // +14 dias
+      startsAt: in30d,
+      endsAt: null,
       isPublished: false,
     },
     create: {
-      id: DRAFT_ID,
-      title: "Evento em Rascunho",
-      description: "Ainda não publicado.",
+      id: "evt_draft_seed",
+      title: "Rascunho de Evento",
+      description: "Este evento está como rascunho.",
       location: "A definir",
-      startsAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+      startsAt: in30d,
+      endsAt: null,
       isPublished: false,
     },
   });
 
-  console.log("✓ Eventos seed garantidos (welcome/draft)");
+  console.log("✓ Eventos seed garantidos");
 }
 
 async function main() {
   await seedUserDemo();
-  await seedEvents();
+
+  try {
+    await seedEvents();
+  } catch (e: any) {
+    // Se a tabela Event ainda não existir, avisa de forma amigável
+    if (e?.code === "P2021") {
+      console.warn("Tabela 'Event' não encontrada — rode `pnpm prisma:deploy` e depois `pnpm seed`.");
+    } else {
+      throw e;
+    }
+  }
 }
 
 main()
@@ -92,9 +96,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    // Se as tabelas não existirem, sugere aplicar migrações
     console.error("Falha no seed:", e);
-    console.error("Dica: rode `pnpm prisma:deploy` para aplicar as migrações no Neon.");
     await prisma.$disconnect();
     process.exit(1);
   });

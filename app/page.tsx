@@ -1,15 +1,17 @@
-import { redirect } from "next/navigation";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default async function HomePage() {
-  const session = await auth();
-
-  if (session) {
-    // Usuário logado → manda para área logada
-    redirect("/logado");
+export default async function Home() {
+  try {
+    const session = await auth();
+    if (session) redirect("/logado");
+  } catch {
+    // se houver cookie antigo inválido, trata como não logado
   }
-
-  // Usuário não logado → manda para login
   redirect("/auth/login");
 }
 

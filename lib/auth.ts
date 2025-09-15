@@ -3,13 +3,12 @@ import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import { loginSchema } from "./validators";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs"; // ⬅️ bcryptjs
 
 const config: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   trustHost: !!process.env.AUTH_TRUST_HOST,
-  // tipagem exige string / string[], então não pode ser undefined
   secret: process.env.AUTH_SECRET ?? "",
   pages: { signIn: "/auth/login" },
   providers: [
@@ -26,10 +25,10 @@ const config: NextAuthConfig = {
         const user = await prisma.user.findUnique({ where: { cpf: only } });
         if (!user) return null;
 
-        const ok = await bcrypt.compare(password, user.passwordHash);
+        // ⬇️ bcryptjs (sync é mais simples e 100% JS)
+        const ok = bcrypt.compareSync(password, user.passwordHash);
         if (!ok) return null;
 
-        // Campos extras via JWT (id/cpf/name)
         return {
           id: user.id,
           cpf: user.cpf,
