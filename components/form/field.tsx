@@ -1,9 +1,10 @@
+// components/form/field.tsx
 import React, { PropsWithChildren, isValidElement, cloneElement, useId } from "react";
 import clsx from "clsx";
 
 type FieldProps = PropsWithChildren<{
   label: string;
-  error?: string | null;          // <- opcional
+  error?: string | null;
   description?: string;
   className?: string;
   showLabel?: boolean;

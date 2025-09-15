@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "@/lib/validators";
@@ -13,11 +12,11 @@ import { Field } from "@/components/form/field";
 import { toast } from "sonner";
 import ky from "ky";
 import { useRouter } from "next/navigation";
-import { onlyDigits } from "@/lib/cpf";
+import { useCallback } from "react";
 
 type FormData = z.infer<typeof registerSchema>;
 
-/** ---- helpers de máscara ---- */
+/** Máscara telefone BR */
 const maskPhoneBR = (value: string) => {
   const v = value.replace(/\D/g, "").slice(0, 11);
   if (v.length <= 2) return `(${v}`;
@@ -43,32 +42,19 @@ export default function RegisterPage() {
       email: "",
       password: "",
     },
-    mode: "onSubmit",
-    reValidateMode: "onChange",
   });
 
-  // Máscara de telefone: (11) 99999-9999
   const onPhoneChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const masked = maskPhoneBR(e.target.value);
-      setValue("phone", masked, { shouldValidate: true, shouldDirty: true });
+      setValue("phone", masked, { shouldValidate: true });
     },
     [setValue]
   );
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Normaliza os dados conforme o backend espera
-      const payload = {
-        name: data.name.trim(),
-        cpf: onlyDigits(data.cpf),
-        phone: onlyDigits(data.phone),
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
-      };
-
-      await ky.post("/api/register", { json: payload });
-
+      await ky.post("/api/register", { json: data });
       toast.success("Conta criada! Faça login.");
       reset();
       router.push("/auth/login");
@@ -84,68 +70,36 @@ export default function RegisterPage() {
     }
   };
 
-  // Para não sobrescrever o onChange interno do RHF ao aplicar máscara
-  const phoneReg = register("phone");
-
   return (
     <AuthShell title="Criar conta" subtitle="Preencha seus dados para continuar">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Field label="Nome completo" error={errors.name?.message}>
-          <Input
-            placeholder="Nome Completo"
-            autoComplete="name"
-            aria-invalid={!!errors.name}
-            disabled={isSubmitting}
-            {...register("name")}
-          />
+        <Field label="Nome completo" error={errors.name?.message ?? null}>
+          <Input placeholder="Nome Completo" {...register("name")} />
         </Field>
 
-        <Field label="CPF" error={errors.cpf?.message}>
+        <Field label="CPF" error={errors.cpf?.message ?? null}>
           <CPFInput
             placeholder="000.000.000-00"
             inputMode="numeric"
-            autoComplete="username"
-            aria-invalid={!!errors.cpf}
-            disabled={isSubmitting}
             {...register("cpf")}
           />
         </Field>
 
-        <Field label="Telefone" hint="Com DDD" error={errors.phone?.message}>
+        <Field label="Telefone" hint="Com DDD" error={errors.phone?.message ?? null}>
           <Input
             placeholder="(11) 99999-9999"
             inputMode="numeric"
-            autoComplete="tel-national"
-            aria-invalid={!!errors.phone}
-            disabled={isSubmitting}
-            {...phoneReg}
-            onChange={(e) => {
-              phoneReg.onChange(e); // mantém RHF em sincronia
-              onPhoneChange(e);     // aplica máscara
-            }}
+            {...register("phone")}
+            onChange={onPhoneChange}
           />
         </Field>
 
-        <Field label="E-mail" error={errors.email?.message}>
-          <Input
-            type="email"
-            placeholder="voce@exemplo.com"
-            autoComplete="email"
-            aria-invalid={!!errors.email}
-            disabled={isSubmitting}
-            {...register("email")}
-          />
+        <Field label="E-mail" error={errors.email?.message ?? null}>
+          <Input type="email" placeholder="(E-Mail) voce@exemplo.com" {...register("email")} />
         </Field>
 
-        <Field label="Senha" hint="Mínimo 6 caracteres" error={errors.password?.message}>
-          <Input
-            type="password"
-            placeholder="••••••••"
-            autoComplete="new-password"
-            aria-invalid={!!errors.password}
-            disabled={isSubmitting}
-            {...register("password")}
-          />
+        <Field label="Senha" hint="Mínimo 6 caracteres" error={errors.password?.message ?? null}>
+          <Input type="password" placeholder="Senha" {...register("password")} />
         </Field>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
