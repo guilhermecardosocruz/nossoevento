@@ -16,7 +16,7 @@ import { useCallback } from "react";
 
 type FormData = z.infer<typeof registerSchema>;
 
-/** Máscara telefone BR */
+/** ---- máscara telefone BR ---- */
 const maskPhoneBR = (value: string) => {
   const v = value.replace(/\D/g, "").slice(0, 11);
   if (v.length <= 2) return `(${v}`;
@@ -33,6 +33,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
     reset,
     setValue,
+    watch,
   } = useForm<FormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -41,9 +42,11 @@ export default function RegisterPage() {
       phone: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
+  // Máscara de telefone
   const onPhoneChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const masked = maskPhoneBR(e.target.value);
@@ -54,7 +57,17 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await ky.post("/api/register", { json: data });
+      // Envie só o necessário à API
+      const payload = {
+        name: data.name,
+        cpf: data.cpf,
+        phone: data.phone,
+        email: data.email,
+        password: data.password,
+      };
+
+      await ky.post("/api/register", { json: payload });
+
       toast.success("Conta criada! Faça login.");
       reset();
       router.push("/auth/login");
@@ -70,14 +83,16 @@ export default function RegisterPage() {
     }
   };
 
+  const password = watch("password");
+
   return (
     <AuthShell title="Criar conta" subtitle="Preencha seus dados para continuar">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Field label="Nome completo" error={errors.name?.message ?? null}>
+        <Field label="Nome completo" error={errors.name?.message}>
           <Input placeholder="Nome Completo" {...register("name")} />
         </Field>
 
-        <Field label="CPF" error={errors.cpf?.message ?? null}>
+        <Field label="CPF" error={errors.cpf?.message}>
           <CPFInput
             placeholder="000.000.000-00"
             inputMode="numeric"
@@ -85,7 +100,7 @@ export default function RegisterPage() {
           />
         </Field>
 
-        <Field label="Telefone" hint="Com DDD" error={errors.phone?.message ?? null}>
+        <Field label="Telefone" hint="Com DDD" error={errors.phone?.message}>
           <Input
             placeholder="(11) 99999-9999"
             inputMode="numeric"
@@ -94,12 +109,33 @@ export default function RegisterPage() {
           />
         </Field>
 
-        <Field label="E-mail" error={errors.email?.message ?? null}>
-          <Input type="email" placeholder="(E-Mail) voce@exemplo.com" {...register("email")} />
+        <Field label="E-mail" error={errors.email?.message}>
+          <Input
+            type="email"
+            placeholder="voce@exemplo.com"
+            {...register("email")}
+          />
         </Field>
 
-        <Field label="Senha" hint="Mínimo 6 caracteres" error={errors.password?.message ?? null}>
+        <Field
+          label="Senha"
+          hint="Mínimo 6 caracteres"
+          error={errors.password?.message}
+        >
           <Input type="password" placeholder="Senha" {...register("password")} />
+        </Field>
+
+        <Field
+          label="Confirmar senha"
+          error={errors.confirmPassword?.message}
+          hint={password ? "Repita a mesma senha" : undefined}
+        >
+          <Input
+            type="password"
+            placeholder="Repita a senha"
+            autoComplete="new-password"
+            {...register("confirmPassword")}
+          />
         </Field>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
