@@ -1,3 +1,4 @@
+// app/auth/register/page.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -12,7 +13,7 @@ import { Field } from "@/components/form/field";
 import { toast } from "sonner";
 import ky from "ky";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 
 type FormData = z.infer<typeof registerSchema>;
 
@@ -56,8 +57,7 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Envia o objeto inteiro; a API valida confirmPassword e ignora no insert
-      await ky.post("/api/register", { json: data });
+      await ky.post("/api/register", { json: data }); // API valida e ignora confirmPassword no insert
       toast.success("Conta criada! Faça login.");
       reset();
       router.push("/auth/login");
@@ -74,10 +74,6 @@ export default function RegisterPage() {
   };
 
   const password = watch("password");
-  const confirmHint = useMemo(
-    () => (password ? "Repita a mesma senha" : undefined),
-    [password]
-  );
 
   return (
     <AuthShell title="Criar conta" subtitle="Preencha seus dados para continuar">
@@ -113,8 +109,8 @@ export default function RegisterPage() {
 
         <Field
           label="Confirmar senha"
-          hint={confirmHint}
           error={errors.confirmPassword?.message ?? null}
+          {...(password ? { hint: "Repita a mesma senha" } : {})}
         >
           <Input
             type="password"
