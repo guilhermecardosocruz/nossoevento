@@ -1,42 +1,33 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { signOut } from "next-auth/react";
 
-export function UserMenu() {
+export function UserMenu({ name }: { name?: string }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
         type="button"
+        className="h-9 px-3 rounded-xl border bg-white text-zinc-900 shadow-sm"
+        onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-2xl border px-3 py-1.5 text-sm shadow-sm hover:bg-zinc-50"
       >
         ☰ Menu
       </button>
 
       {open && (
         <div
+          className="absolute right-0 mt-2 w-48 rounded-xl border bg-white shadow-lg overflow-hidden"
           role="menu"
-          className="absolute right-0 mt-2 w-44 rounded-2xl border bg-white p-1 shadow-lg"
         >
+          <div className="px-3 py-2 text-sm text-zinc-600">Olá, {name ?? "usuário"}!</div>
           <button
-            role="menuitem"
+            className="w-full text-left px-3 py-2 text-sm hover:bg-zinc-50"
             onClick={() => signOut({ callbackUrl: "/auth/login" })}
-            className="w-full text-left rounded-xl px-3 py-2 text-sm hover:bg-zinc-100"
+            role="menuitem"
           >
             Sair
           </button>
