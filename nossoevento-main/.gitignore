@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next
+/.next
+/out
+
+# env
+.env
+.env.local
+
+# prisma
+prisma/*.db
+prisma/dev.db
+prisma/test.db
+
+# misc
+.DS_Store
+*.log
+
+# IDE / editor configs
+.vscode/
+.idea/
+
+# test coverage
+coverage/
+
+# swap files
+*.swp
+*.swx
+

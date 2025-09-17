@@ -1,0 +1,55 @@
+{
+  "name": "nosso-evento",
+  "private": true,
+  "version": "1.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "dev:mobile": "next dev -H 0.0.0.0",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint . --ext ts,tsx --max-warnings=0",
+    "prisma:generate": "prisma generate",
+    "prisma:deploy": "prisma migrate deploy",
+    "seed": "tsx -r dotenv/config prisma/seed.ts",
+    "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "2.10.0",
+    "@hookform/resolvers": "3.10.0",
+    "@prisma/client": "5.16.2",
+    "@stripe/stripe-js": "^7.9.0",
+    "@tanstack/react-query": "5.87.1",
+    "autoprefixer": "10.4.21",
+    "bcryptjs": "^3.0.2",
+    "clsx": "2.1.1",
+    "ky": "0.33.3",
+    "lucide-react": "0.441.0",
+    "next": "14.2.5",
+    "next-auth": "5.0.0-beta.29",
+    "postcss": "8.5.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "7.62.0",
+    "sonner": "1.7.4",
+    "stripe": "^18.5.0",
+    "tailwindcss": "3.4.10",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "20.19.13",
+    "@types/react": "19.1.12",
+    "dotenv": "16.4.5",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.5",
+    "prisma": "5.16.2",
+    "tsx": "4.19.2",
+    "typescript": "5.9.2"
+  }
+}
