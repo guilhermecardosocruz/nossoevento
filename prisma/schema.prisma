@@ -18,6 +18,7 @@ model User {
   birthDate    DateTime?
   passwordHash String
   createdAt    DateTime @default(now())
+  resetTokens  PasswordResetToken[]
 }
 
 model Event {
@@ -33,4 +34,17 @@ model Event {
   // 🔹 Index para listar “próximos eventos publicados”
   @@index([isPublished, startsAt], map: "event_published_starts_idx")
 }
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
 
