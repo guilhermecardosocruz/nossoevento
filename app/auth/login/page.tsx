@@ -10,7 +10,7 @@ export default function LoginPage() {
         {/* topo: logo + slogan */}
         <div className="flex flex-col items-center">
           <Image
-            src="/logo_b2g_3"
+            src="/public/logo_b2g_3"
             alt="B2G"
             width={180}
             height={72}
